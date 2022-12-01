@@ -1,25 +1,19 @@
-﻿List<List<string>> Split(string[] input)
+﻿List<string[]> Split(string[] input)
 {
-    var result = new List<List<string>>();
+    var separatorIndices = input
+        .Select((value, index) => (value, index))
+        .Where(x => x.value == "")
+        .Select(x => x.index)
+        .ToList();
 
-    var start = 0;
+    var startIndices = separatorIndices.Select(i => i + 1).Prepend(0).ToList();
+    var endIndices = separatorIndices.Append(input.Length).ToList();
 
-    for (int i = 0; i < input.Length; i++)
-    {
-        if (input[i] == "")
-        {
-            result.Add(input[start..i].ToList());
-            start = i + 1;
-        }
-    }
-
-    result.Add(input[start..^0].ToList());
-
-    return result;
+    return startIndices.Zip(endIndices, (s, e) => input[s..e]).ToList();
 }
 
 var input = File.ReadAllLines("input.txt");
-var elves = Split(input).Select(l => l.Select(int.Parse).Sum()).ToList();
+var elves = Split(input).Select(l => l.Sum(int.Parse)).ToList();
 
 var answer1 = elves.Max();
 Console.WriteLine($"Answer 1: {answer1}");
