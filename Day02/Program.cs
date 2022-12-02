@@ -51,7 +51,6 @@ mapped = rounds.Select(r => (opponent: handMap[r.opponent], self: Needed(handMap
 var answer2 = mapped.Sum(r => Score(r.opponent, r.self));
 Console.WriteLine($"Answer 2: {answer2}");
 
-
 enum Hand
 {
     Rock = 1,
