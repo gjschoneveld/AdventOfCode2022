@@ -28,27 +28,23 @@ Dictionary<(Hand opponent, Hand self), Outcome> outcomes = new()
     [(Hand.Scissors, Hand.Scissors)] = Outcome.Draw
 };
 
+int Score((Hand opponent, Hand self) round)
+{
+    return (int)outcomes[round] + (int)round.self;
+}
+
 Hand Needed(Hand opponent, Outcome outcome)
 {
     return outcomes.First(kv => kv.Key.opponent == opponent && kv.Value == outcome).Key.self;
 }
 
-int Score(Hand opponent, Hand self)
-{
-    return (int)outcomes[(opponent, self)] + (int)self;
-}
-
 var input = File.ReadAllLines("input.txt");
 var rounds = input.Select(line => (opponent: line[0], self: line[^1])).ToList();
 
-var mapped = rounds.Select(r => (opponent: handMap[r.opponent], self: handMap[r.self])).ToList();
-
-var answer1 = mapped.Sum(r => Score(r.opponent, r.self));
+var answer1 = rounds.Select(r => (opponent: handMap[r.opponent], self: handMap[r.self])).Sum(Score);
 Console.WriteLine($"Answer 1: {answer1}");
 
-mapped = rounds.Select(r => (opponent: handMap[r.opponent], self: Needed(handMap[r.opponent], outcomeMap[r.self]))).ToList();
-
-var answer2 = mapped.Sum(r => Score(r.opponent, r.self));
+var answer2 = rounds.Select(r => (opponent: handMap[r.opponent], self: Needed(handMap[r.opponent], outcomeMap[r.self]))).Sum(Score);
 Console.WriteLine($"Answer 2: {answer2}");
 
 enum Hand
