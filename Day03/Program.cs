@@ -26,10 +26,7 @@ List<char> FindCommon(string[] lists)
         return lists[0].ToList();
     }
 
-    var types = lists[0].Distinct().ToList();
-    var intersect = types.Intersect(FindCommon(lists[1..])).ToList();
-
-    return intersect;
+    return lists[0].Intersect(FindCommon(lists[1..])).ToList();
 }
 
 int Priority(char c)
