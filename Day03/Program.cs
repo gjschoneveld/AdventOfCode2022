@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-var input = File.ReadAllLines("input.txt");
+﻿var input = File.ReadAllLines("input.txt");
 
 var answer1 = input.Select(GetCompartments).SelectMany(FindCommon).Sum(Priority);
 Console.WriteLine($"Answer 1: {answer1}");
