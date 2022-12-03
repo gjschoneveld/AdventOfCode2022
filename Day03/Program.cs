@@ -1,15 +1,11 @@
-﻿var input = File.ReadAllLines("input.txt");
+﻿using System.Linq;
 
-var common = input.Select(GetCompartments).SelectMany(FindCommon).ToList();
-var priorities = common.Select(Priority).ToList();
+var input = File.ReadAllLines("input.txt");
 
-var answer1 = priorities.Sum();
+var answer1 = input.Select(GetCompartments).SelectMany(FindCommon).Sum(Priority);
 Console.WriteLine($"Answer 1: {answer1}");
 
-common = input.Chunk(3).SelectMany(FindCommon).ToList();
-priorities = common.Select(Priority).ToList();
-
-var answer2 = priorities.Sum();
+var answer2 = input.Chunk(3).SelectMany(FindCommon).Sum(Priority);
 Console.WriteLine($"Answer 2: {answer2}");
 
 string[] GetCompartments(string rucksack)
