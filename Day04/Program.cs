@@ -24,9 +24,8 @@ class Section
 
     public static List<Section> Parse(string line)
     {
-        var parts = line.Split(',', '-');
-
-        return parts
+        return line
+            .Split(',', '-')
             .Select(int.Parse)
             .Chunk(2)
             .Select(v => new Section { Start = v[0], End = v[1] })
