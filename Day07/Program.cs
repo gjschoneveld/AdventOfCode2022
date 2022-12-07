@@ -81,6 +81,7 @@ int GetFolderSize(Folder folder, List<int> sizes)
         }
     }
 
+    // as side effect we collect all folder sizes
     sizes.Add(size);
 
     return size;
