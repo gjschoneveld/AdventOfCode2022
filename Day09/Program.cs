@@ -52,20 +52,15 @@ int ApplyMotions(List<(char direction, int count)> motions, int knots)
                 _ => throw new Exception()
             };
 
-            var index = 1;
-
-            while (!IsCloseEnough(positions[index - 1], positions[index]))
+            for (int index = 1; index < positions.Count; index++)
             {
-                positions[index] = MoveCloser(positions[index - 1], positions[index]);
-
-                if (index == positions.Count - 1)
+                if (!IsCloseEnough(positions[index - 1], positions[index]))
                 {
-                    visited.Add(positions[index]);
-                    break;
+                    positions[index] = MoveCloser(positions[index - 1], positions[index]);
                 }
-
-                index++;
             }
+
+            visited.Add(positions[^1]);
         }
     }
 
