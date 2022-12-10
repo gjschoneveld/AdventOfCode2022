@@ -6,7 +6,6 @@ class Noop : Instruction
 
     public override void Execute(CPU cpu)
     {
-
     }
 }
 
