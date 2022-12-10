@@ -29,15 +29,8 @@ bool IsCloseEnough((int x, int y) head, (int x, int y) tail)
 
 int ApplyMotions(List<(char direction, int count)> motions, int knots)
 {
-    (int x, int y) start = (0, 0);
-    var visited = new HashSet<(int x, int y)> { start };
-
-    List<(int x, int y)> positions = new();
-
-    for (int i = 0; i < knots; i++)
-    {
-        positions.Add(start);
-    }
+    var positions = new (int x, int y)[knots];
+    var visited = new HashSet<(int x, int y)>();
 
     foreach (var motion in motions)
     {
@@ -52,7 +45,7 @@ int ApplyMotions(List<(char direction, int count)> motions, int knots)
                 _ => throw new Exception()
             };
 
-            for (int index = 1; index < positions.Count; index++)
+            for (int index = 1; index < positions.Length; index++)
             {
                 if (!IsCloseEnough(positions[index - 1], positions[index]))
                 {
