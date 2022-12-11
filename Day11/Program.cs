@@ -71,11 +71,11 @@ class Monkey
 
     public long Inspections { get; set; }
 
-    public void InspectItem(List<Monkey> monkeys, long item, long? modulo)
+    public void InspectItem(List<Monkey> monkeys, long item, long? modulus)
     {
         var level = Expression.Evaluate(item);
 
-        if (modulo == null)
+        if (modulus == null)
         {
             // part 1
             level /= 3;
@@ -83,7 +83,7 @@ class Monkey
         else
         {
             // part 2
-            level %= (long)modulo;
+            level %= (long)modulus;
         }
 
         var destination = level % Test == 0 ? True : False;
@@ -92,11 +92,11 @@ class Monkey
         Inspections++;
     }
 
-    public void InspectItems(List<Monkey> monkeys, long? modulo)
+    public void InspectItems(List<Monkey> monkeys, long? modulus)
     {
         foreach (var item in Items)
         {
-            InspectItem(monkeys, item, modulo);
+            InspectItem(monkeys, item, modulus);
         }
 
         Items.Clear();
@@ -147,13 +147,13 @@ class Program
         return startIndices.Zip(endIndices, (s, e) => input[s..e]).ToList();
     }
 
-    static long Simulate(List<Monkey> monkeys, int rounds, long? modulo)
+    static long Simulate(List<Monkey> monkeys, int rounds, long? modulus)
     {
         for (int r = 0; r < rounds; r++)
         {
             foreach (var monkey in monkeys)
             {
-                monkey.InspectItems(monkeys, modulo);
+                monkey.InspectItems(monkeys, modulus);
             }
         }
 
@@ -174,9 +174,9 @@ class Program
         Console.WriteLine($"Answer 1: {answer1}");
 
         monkeys = sections.Select(Monkey.Parse).ToList();
-        var modulo = monkeys.Select(m => m.Test).Aggregate((a, b) => a * b);
+        var modulus = monkeys.Select(m => m.Test).Aggregate((a, b) => a * b);
 
-        var answer2 = Simulate(monkeys, 10_000, modulo);
+        var answer2 = Simulate(monkeys, 10_000, modulus);
         Console.WriteLine($"Answer 2: {answer2}");
     }
 }
