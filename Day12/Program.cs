@@ -10,7 +10,7 @@ var current = new HashSet<(int x, int y)> { start };
 
 while(!current.Contains(end))
 {
-	current = current.SelectMany(ReachableNeighbours).Where(p => !visited.Contains(p)).ToHashSet();
+    current = current.SelectMany(ReachableNeighbours).Where(p => !visited.Contains(p)).ToHashSet();
 
     visited.UnionWith(current);
     steps++;
@@ -37,26 +37,26 @@ Console.WriteLine($"Answer 2: {answer2}");
 
 (int x, int y) FindAndReplace(char original, char replacement)
 {
-	for (int y = 0; y < field.Count; y++)
-	{
-		for (int x = 0; x < field[y].Count; x++)
-		{
-			if (field[y][x] == original)
-			{
+    for (int y = 0; y < field.Count; y++)
+    {
+        for (int x = 0; x < field[y].Count; x++)
+        {
+            if (field[y][x] == original)
+            {
                 field[y][x] = replacement;
 
                 return (x, y);
-			}
-		}
-	}
+            }
+        }
+    }
 
-	throw new Exception();
+    throw new Exception();
 }
 
 bool IsValid((int x, int y) position)
 {
-	return 0 <= position.y && position.y < field.Count &&
-		0 <= position.x && position.x < field[position.y].Count;
+    return 0 <= position.y && position.y < field.Count &&
+        0 <= position.x && position.x < field[position.y].Count;
 }
 
 char GetValue((int x, int y) position) => field[position.y][position.x];
@@ -74,9 +74,9 @@ List<(int x, int y)> Neighbours((int x, int y) position)
 
 List<(int x, int y)> ReachableNeighbours((int x, int y) position)
 {
-	var value = GetValue(position);
+    var value = GetValue(position);
 
-	return Neighbours(position).Where(nb => GetValue(nb) - value <= 1).ToList();
+    return Neighbours(position).Where(nb => GetValue(nb) - value <= 1).ToList();
 }
 
 List<(int x, int y)> ReachableNeighboursReversed((int x, int y) position)
