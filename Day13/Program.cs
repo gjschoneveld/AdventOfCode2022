@@ -11,7 +11,7 @@ Console.WriteLine($"Answer 1: {answer1}");
 var dividers = new List<Node> { ParseLine("[[2]]"), ParseLine("[[6]]") };
 var all = trees.SelectMany(p => p.nodes).Concat(dividers).ToList();
 
-all.Sort((a, b) => ToComparionResult(InRightOrder(a, b)));
+all.Sort((a, b) => ToComparisonResult(InRightOrder(a, b)));
 
 var answer2 = dividers.Select(d => all.IndexOf(d) + 1).Aggregate((a, b) => a * b);
 Console.WriteLine($"Answer 2: {answer2}");
@@ -152,7 +152,7 @@ bool? InRightOrder(Node left, Node right)
     return InRightOrder(left, new Collection { Children = new() { right } });
 }
 
-int ToComparionResult(bool? value)
+int ToComparisonResult(bool? value)
 {
     if (value == null)
     {
