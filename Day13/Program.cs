@@ -49,7 +49,14 @@ List<Token> Tokenize(string line)
     {
         if (!char.IsDigit(line[index]))
         {
-            result.Add(new Symbol { Value = line[index] });
+            result.Add(line[index] switch
+            {
+                '[' => new Start(),
+                ']' => new End(),
+                ',' => new Separator(),
+                _ => throw new Exception()
+            });
+
             index++;
 
             continue;
@@ -75,7 +82,7 @@ Node Parse(List<Token> tokens, ref int index)
     {
         index++;
 
-        return new Integer { Value = number.Value };
+        return number;
     }
 
     // consume [
@@ -86,14 +93,14 @@ Node Parse(List<Token> tokens, ref int index)
 
     while (!end)
     {
-        if (tokens[index] is Number || (tokens[index] is Symbol symbol && symbol.Value == '['))
+        if (tokens[index] is Number || tokens[index] is Start)
         {
             var node = Parse(tokens, ref index);
             children.Add(node);
         }
 
         // consume , or ]
-        end = ((Symbol)tokens[index]).Value == ']';
+        end = tokens[index] is End;
         index++;
     }
 
@@ -102,7 +109,7 @@ Node Parse(List<Token> tokens, ref int index)
 
 bool? InRightOrder(Node left, Node right)
 {
-    if (left is Integer leftInt && right is Integer rightInt)
+    if (left is Number leftInt && right is Number rightInt)
     {
         if (leftInt.Value < rightInt.Value)
         {
@@ -123,7 +130,7 @@ bool? InRightOrder(Node left, Node right)
         for (int i = 0; i < Math.Min(leftList.Children.Count, rightList.Children.Count); i++)
         {
             var innerResult = InRightOrder(leftList.Children[i], rightList.Children[i]);
-            
+
             if (innerResult != null)
             {
                 return innerResult;
@@ -144,7 +151,7 @@ bool? InRightOrder(Node left, Node right)
         }
     }
 
-    if (left is Integer)
+    if (left is Number)
     {
         return InRightOrder(new Collection { Children = new() { left } }, right);
     }
@@ -167,25 +174,16 @@ int ToComparisonResult(bool? value)
     return 1;
 }
 
-abstract class Token
-{
-}
+interface Token { }
+interface Node { }
 
-class Symbol : Token
-{
-    public char Value { get; set; }
-}
+class Start : Token { }
 
-class Number : Token
-{
-    public int Value { get; set; }
-}
+class End : Token { }
 
-abstract class Node
-{
-}
+class Separator : Token { }
 
-class Integer : Node
+class Number : Token, Node
 {
     public int Value { get; set; }
 }
