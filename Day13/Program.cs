@@ -87,16 +87,21 @@ Node Parse(List<Token> tokens, ref int index)
     // consume [
     index++;
 
+    if (tokens[index] is End)
+    {
+        // consume ]
+        index++;
+
+        return new Collection();
+    }
+
     var children = new List<Node>();
     var end = false;
 
     while (!end)
     {
-        if (tokens[index] is Number || tokens[index] is Start)
-        {
-            var node = Parse(tokens, ref index);
-            children.Add(node);
-        }
+        var node = Parse(tokens, ref index);
+        children.Add(node);
 
         // consume , or ]
         end = tokens[index] is End;
