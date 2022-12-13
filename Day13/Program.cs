@@ -33,7 +33,6 @@ List<string[]> Split(string[] input)
 Node ParseLine(string line)
 {
     var tokens = Tokenize(line);
-
     var index = 0;
 
     return Parse(tokens, ref index);
@@ -178,9 +177,7 @@ interface Token { }
 interface Node { }
 
 class Start : Token { }
-
 class End : Token { }
-
 class Separator : Token { }
 
 class Number : Token, Node
