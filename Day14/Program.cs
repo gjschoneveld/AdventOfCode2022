@@ -1,5 +1,5 @@
 ﻿var input = File.ReadAllLines("input.txt");
-var structures = input.Select(ParseLine).ToList();
+var structures = input.Select(ParsePath).ToList();
 var rock = RockLocations(structures);
 var floor = rock.Max(p => p.y) + 2;
 var entry = (x: 500, y: 0);
@@ -10,7 +10,7 @@ Console.WriteLine($"Answer 1: {answer1}");
 var answer2 = Simulate(true);
 Console.WriteLine($"Answer 2: {answer2}");
 
-List<(int x, int y)> ParseLine(string line)
+List<(int x, int y)> ParsePath(string line)
 {
     return line.Split(" -> ").Select(ParsePoint).ToList();
 }
