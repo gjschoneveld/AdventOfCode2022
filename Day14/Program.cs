@@ -1,6 +1,6 @@
 ﻿var input = File.ReadAllLines("input.txt");
-var structures = input.Select(ParsePath).ToList();
-var rock = RockLocations(structures);
+var paths = input.Select(ParsePath).ToList();
+var rock = RockLocations(paths);
 var floor = rock.Max(p => p.y) + 2;
 var entry = (x: 500, y: 0);
 
