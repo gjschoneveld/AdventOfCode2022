@@ -7,7 +7,6 @@ Dictionary<string, Valve> valves = input.Select(Valve.Parse).ToDictionary(v => v
 (string name, int steps, bool open) start = ("AA", 0, false);
 RemoveUselessValves();
 
-var md5 = MD5.Create();
 var cache = new Dictionary<long, int>();
 
 var answer1 = MaxReleasedPressurePart1(start, 30, new());
@@ -27,9 +26,9 @@ int MaxReleasedPressurePart1((string name, int steps, bool open) current, int mi
 
     var hash = Hash(new() { current }, minutes, open);
 
-    if (cache.ContainsKey(hash))
+    if (cache.TryGetValue(hash, out int value))
     {
-        return cache[hash];
+        return value;
     }
 
     // move
@@ -67,9 +66,9 @@ int MaxReleasedPressurePart2(List<(string name, int steps, bool open)> current, 
 
     var hash = Hash(current, minutes, open);
 
-    if (cache.ContainsKey(hash))
+    if (cache.TryGetValue(hash, out int value))
     {
-        return cache[hash];
+        return value;
     }
 
     var moves = current.Select(Moves).ToList();
@@ -158,7 +157,7 @@ long Hash(List<(string name, int steps, bool open)> current, int minutes, HashSe
     var json = JsonSerializer.Serialize(data);
 
     byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(json);
-    byte[] hashBytes = md5.ComputeHash(inputBytes);
+    byte[] hashBytes = MD5.HashData(inputBytes);
 
     var combined = new byte[8];
 
