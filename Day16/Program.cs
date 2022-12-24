@@ -1,43 +1,52 @@
 ﻿var input = File.ReadAllLines("input.txt");
 Dictionary<string, Valve> valves = input.Select(Valve.Parse).ToDictionary(v => v.Name);
 
+(string name, int steps, bool open) start = ("AA", 0, false);
+RemoveUselessValves();
+
 var cache = new Dictionary<State, int>();
 
-var answer1 = MaxReleasedPressure("AA", 30, new());
+var answer1 = MaxReleasedPressurePart1(start, 30, new());
 Console.WriteLine($"Answer 1: {answer1}");
 
-int MaxReleasedPressure(string name, int minutes, HashSet<string> open)
+cache.Clear();
+
+var answer2 = MaxReleasedPressurePart2(new() { start, start }, 26, new());
+Console.WriteLine($"Answer 2: {answer2}");
+
+int MaxReleasedPressurePart1((string name, int steps, bool open) current, int minutes, HashSet<string> open)
 {
-    if (minutes < 2)
+    if (minutes < 1)
     {
         return 0;
     }
 
-    var state = new State
-    {
-        Name = name,
-        Minutes = minutes,
-        Open = open
-    };
+    var state = new State(new() { current }, minutes, open);
 
     if (cache.ContainsKey(state))
     {
-        return cache[state]; 
+        return cache[state];
     }
 
-    var valve = valves[name];
+    // move
+    var moves = Moves(current);
+    var max = moves.Max(m => MaxReleasedPressurePart1(m, minutes - 1, open));
 
-    // move without opening
-    var max = valve.Connections.Max(v => MaxReleasedPressure(v, minutes - 1, open));
+    // open
+    var mayOpen = current.steps == 0 && valves[current.name].FlowRate > 0 && !open.Contains(current.name);
 
-    // open self and move
-    if (valve.FlowRate > 0 && !open.Contains(name))
+    if (mayOpen)
     {
-        open.Add(name);
-        var maxOpen = (minutes - 1) * valve.FlowRate + valve.Connections.Max(v => MaxReleasedPressure(v, minutes - 2, open));
-        open.Remove(name);
+        open.Add(current.name);
+        var maxOpen = MaxReleasedPressurePart1((current.name, 0, true), minutes - 1, open);
+        open.Remove(current.name);
 
         max = Math.Max(max, maxOpen);
+    }
+
+    if (current.open)
+    {
+        max += valves[current.name].FlowRate * minutes;
     }
 
     cache[state] = max;
@@ -45,11 +54,132 @@ int MaxReleasedPressure(string name, int minutes, HashSet<string> open)
     return max;
 }
 
+int MaxReleasedPressurePart2(List<(string name, int steps, bool open)> current, int minutes, HashSet<string> open)
+{
+    if (minutes < 1)
+    {
+        return 0;
+    }
+
+    var state = new State(current, minutes, open);
+
+    if (cache.ContainsKey(state))
+    {
+        return cache[state];
+    }
+
+    var moves = current.Select(Moves).ToList();
+    var mayOpen = current.Select(c => c.steps == 0 && valves[c.name].FlowRate > 0 && !open.Contains(c.name)).ToList();
+
+    var max = 0;
+
+    // move both
+    foreach (var m0 in moves[0])
+    {
+        var maxMove = moves[1].Max(m => MaxReleasedPressurePart2(new() { m0, m }, minutes - 1, open));
+        max = Math.Max(max, maxMove);
+    }
+
+    // open both
+    if (mayOpen[0] && mayOpen[1] && current[0].name != current[1].name)
+    {
+        open.Add(current[0].name);
+        open.Add(current[1].name);
+        var maxOpen = MaxReleasedPressurePart2(current.Select(c => (c.name, 0, true)).ToList(), minutes - 1, open);
+        open.Remove(current[0].name);
+        open.Remove(current[1].name);
+
+        max = Math.Max(max, maxOpen);
+    }
+
+    // open first, move second
+    if (mayOpen[0])
+    {
+        open.Add(current[0].name);
+        var maxOpenMove = moves[1].Max(m => MaxReleasedPressurePart2(new() { (current[0].name, 0, true), m }, minutes - 1, open));
+        open.Remove(current[0].name);
+
+        max = Math.Max(max, maxOpenMove);
+    }
+
+    // move first, open second
+    if (mayOpen[1])
+    {
+        open.Add(current[1].name);
+        var maxMoveOpen = moves[0].Max(m => MaxReleasedPressurePart2(new() { m, (current[1].name, 0, true) }, minutes - 1, open));
+        open.Remove(current[1].name);
+
+        max = Math.Max(max, maxMoveOpen);
+    }
+
+    for (int i = 0; i < current.Count; i++)
+    {
+        if (current[i].open)
+        {
+            max += valves[current[i].name].FlowRate * minutes;
+        }
+    }
+
+    cache[state] = max;
+
+    return max;
+}
+
+List<(string name, int steps, bool open)> Moves((string name, int steps, bool open) current)
+{
+    if (current.steps > 0)
+    {
+        return new()
+        {
+            (current.name, current.steps - 1, false)
+        };
+    }
+
+    return valves[current.name].Connections.Select(c => (c.name, c.distance - 1, false)).ToList();
+}
+
+void RemoveUselessValves()
+{
+    var empty = valves.Where(kv => kv.Value.FlowRate == 0 && kv.Key != start.name).ToList();
+
+    foreach ((var name, var valve) in empty)
+    {
+        foreach (var c1 in valve.Connections)
+        {
+            var source = valves[c1.name];
+
+            source.Connections.RemoveAll(c => c.name == name);
+
+            foreach (var c2 in valve.Connections)
+            {
+                var target = valves[c2.name];
+
+                if (source == target)
+                {
+                    continue;
+                }
+
+                var distance = c1.distance + c2.distance;
+
+                var currentConnection = source.Connections.FirstOrDefault(c => c.name == target.Name);
+
+                if (currentConnection == default || currentConnection.distance > distance)
+                {
+                    source.Connections.Remove(currentConnection);
+                    source.Connections.Add((target.Name, distance));
+                }
+            }
+        }
+
+        valves.Remove(name);
+    }
+}
+
 class Valve
 {
     public required string Name { get; set; }
     public required int FlowRate { get; set; }
-    public required List<string> Connections { get; set; }
+    public required List<(string name, int distance)> Connections { get; set; }
 
     public static Valve Parse(string line)
     {
@@ -59,25 +189,36 @@ class Valve
         {
             Name = parts[1],
             FlowRate = int.Parse(parts[5]),
-            Connections = parts[10..].ToList()
+            Connections = parts[10..].Select(n => (n, 1)).ToList()
         };
     }
 }
 
 class State : IEquatable<State>
 {
-    public required string Name { get; set; }
-    public required int Minutes { get; set; }
-    public required HashSet<string> Open { get; set; }
+    private List<(string name, int steps, bool open)> Current { get; set; }
+    private int Minutes { get; set; }
+    private List<string> Open { get; set; }
+
+    public State(List<(string name, int steps, bool open)> current, int minutes, HashSet<string> open)
+    {
+        Current = current.OrderBy(c => c.name).ThenBy(c => c.steps).ThenBy(c => c.open).ToList();
+        Minutes = minutes;
+        Open = open.OrderBy(n => n).ToList();
+    }
 
     public override int GetHashCode()
     {
         var hash = new HashCode();
 
-        hash.Add(Name);
+        foreach (var tuple in Current)
+        {
+            hash.Add(tuple);
+        }
+
         hash.Add(Minutes);
 
-        foreach (var open in Open.OrderBy(n => n))
+        foreach (var open in Open)
         {
             hash.Add(open);
         }
@@ -97,11 +238,8 @@ class State : IEquatable<State>
             return false;
         }
 
-        if (Name != other.Name || Minutes != other.Minutes)
-        {
-            return false;
-        }
-
-        return Open.OrderBy(n => n).SequenceEqual(other.Open.OrderBy(n => n));
+        return Current.SequenceEqual(other.Current) &&
+            Minutes == other.Minutes &&
+            Open.SequenceEqual(other.Open);
     }
 }
