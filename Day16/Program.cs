@@ -145,7 +145,8 @@ long Hash(List<(string name, int steps, bool open)> current, int minutes, HashSe
 {
     var data = new
     {
-        Current = current.OrderBy(c => c.name).ThenBy(c => c.steps).ThenBy(c => c.open).Select(c => new {
+        Current = current.OrderBy(c => c.name).ThenBy(c => c.steps).ThenBy(c => c.open).Select(c => new
+        {
             Name = c.name,
             Steps = c.steps,
             Open = c.open
