@@ -1,10 +1,14 @@
-﻿var input = File.ReadAllLines("input.txt");
+﻿using System.Security.Cryptography;
+using System.Text.Json;
+
+var input = File.ReadAllLines("input.txt");
 Dictionary<string, Valve> valves = input.Select(Valve.Parse).ToDictionary(v => v.Name);
 
 (string name, int steps, bool open) start = ("AA", 0, false);
 RemoveUselessValves();
 
-var cache = new Dictionary<State, int>();
+var md5 = MD5.Create();
+var cache = new Dictionary<long, int>();
 
 var answer1 = MaxReleasedPressurePart1(start, 30, new());
 Console.WriteLine($"Answer 1: {answer1}");
@@ -21,11 +25,11 @@ int MaxReleasedPressurePart1((string name, int steps, bool open) current, int mi
         return 0;
     }
 
-    var state = new State(new() { current }, minutes, open);
+    var hash = Hash(new() { current }, minutes, open);
 
-    if (cache.ContainsKey(state))
+    if (cache.ContainsKey(hash))
     {
-        return cache[state];
+        return cache[hash];
     }
 
     // move
@@ -49,7 +53,7 @@ int MaxReleasedPressurePart1((string name, int steps, bool open) current, int mi
         max += valves[current.name].FlowRate * minutes;
     }
 
-    cache[state] = max;
+    cache[hash] = max;
 
     return max;
 }
@@ -61,11 +65,11 @@ int MaxReleasedPressurePart2(List<(string name, int steps, bool open)> current, 
         return 0;
     }
 
-    var state = new State(current, minutes, open);
+    var hash = Hash(current, minutes, open);
 
-    if (cache.ContainsKey(state))
+    if (cache.ContainsKey(hash))
     {
-        return cache[state];
+        return cache[hash];
     }
 
     var moves = current.Select(Moves).ToList();
@@ -120,7 +124,7 @@ int MaxReleasedPressurePart2(List<(string name, int steps, bool open)> current, 
         }
     }
 
-    cache[state] = max;
+    cache[hash] = max;
 
     return max;
 }
@@ -136,6 +140,37 @@ List<(string name, int steps, bool open)> Moves((string name, int steps, bool op
     }
 
     return valves[current.name].Connections.Select(c => (c.name, c.distance - 1, false)).ToList();
+}
+
+long Hash(List<(string name, int steps, bool open)> current, int minutes, HashSet<string> open)
+{
+    var data = new
+    {
+        Current = current.OrderBy(c => c.name).ThenBy(c => c.steps).ThenBy(c => c.open).Select(c => new {
+            Name = c.name,
+            Steps = c.steps,
+            Open = c.open
+        }).ToList(),
+        Minutes = minutes,
+        Open = open.OrderBy(n => n).ToList()
+    };
+
+    var json = JsonSerializer.Serialize(data);
+
+    byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(json);
+    byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+    var combined = new byte[8];
+
+    var index = 0;
+
+    foreach (var b in hashBytes)
+    {
+        combined[index] ^= b;
+        index = (index + 1) % combined.Length;
+    }
+
+    return BitConverter.ToInt64(combined);
 }
 
 void RemoveUselessValves()
@@ -191,55 +226,5 @@ class Valve
             FlowRate = int.Parse(parts[5]),
             Connections = parts[10..].Select(n => (n, 1)).ToList()
         };
-    }
-}
-
-class State : IEquatable<State>
-{
-    private List<(string name, int steps, bool open)> Current { get; set; }
-    private int Minutes { get; set; }
-    private List<string> Open { get; set; }
-
-    public State(List<(string name, int steps, bool open)> current, int minutes, HashSet<string> open)
-    {
-        Current = current.OrderBy(c => c.name).ThenBy(c => c.steps).ThenBy(c => c.open).ToList();
-        Minutes = minutes;
-        Open = open.OrderBy(n => n).ToList();
-    }
-
-    public override int GetHashCode()
-    {
-        var hash = new HashCode();
-
-        foreach (var tuple in Current)
-        {
-            hash.Add(tuple);
-        }
-
-        hash.Add(Minutes);
-
-        foreach (var open in Open)
-        {
-            hash.Add(open);
-        }
-
-        return hash.ToHashCode();
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return obj is State other && this == other;
-    }
-
-    public bool Equals(State? other)
-    {
-        if (other == null)
-        {
-            return false;
-        }
-
-        return Current.SequenceEqual(other.Current) &&
-            Minutes == other.Minutes &&
-            Open.SequenceEqual(other.Open);
     }
 }
