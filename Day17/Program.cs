@@ -75,30 +75,26 @@ long Simulate(State state, int count)
             if (IsAllowed(state.Rocks, shape, next))
             {
                 position = next;
+
+                continue;
             }
-            else
+
+            // settle
+            state.Rocks.UnionWith(shape.PiecesAtPosition(position));
+            state.Count++;
+
+            // if there is a full line remove everything below it because that is unreachable
+            foreach (var y in shape.PiecesAtPosition(position).Select(p => p.y).Distinct())
             {
-                state.Count++;
-                state.Rocks.UnionWith(shape.PiecesAtPosition(position));
+                var fullLine = Enumerable.Range(minX, maxX - minX + 1).All(x => state.Rocks.Contains((x, y)));
 
-                // if there is a full line remove everything below it because that is unreachable
-                foreach (var y in shape.PiecesAtPosition(position).Select(p => p.y).Distinct())
+                if (fullLine)
                 {
-                    var all = true;
-
-                    for (int x = minX; x <= maxX; x++)
-                    {
-                        all &= state.Rocks.Contains((x, y));
-                    }
-
-                    if (all)
-                    {
-                        state.Rocks.RemoveWhere(p => p.y < y);
-                    }
+                    state.Rocks.RemoveWhere(p => p.y < y);
                 }
-
-                break;
             }
+
+            break;
         }
     }
 
