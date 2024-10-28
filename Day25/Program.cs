@@ -80,20 +80,12 @@ string SnafuAdd(string a, string b)
 
         var sum = digitA + digitB + carry;
 
-        if (sum > 2)
+        (sum, carry) = sum switch
         {
-            sum -= 5;
-            carry = 1;
-        }
-        else if (sum < -2)
-        {
-            sum += 5;
-            carry = -1;
-        }
-        else
-        {
-            carry = 0;
-        }
+            > 2 => (sum - 5, 1),
+            < -2 => (sum + 5, -1),
+            _ => (sum, 0)
+        };
 
         digits.Insert(0, ToSnafuDigit(sum));
     }
