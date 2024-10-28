@@ -48,7 +48,7 @@ long ToDecimal(string snafu)
 
 string ToSnafu(long number)
 {
-    var digits = new List<char>();
+    var result = "";
 
     while (number > 0)
     {
@@ -61,15 +61,15 @@ string ToSnafu(long number)
             number++;
         }
 
-        digits.Insert(0, ToSnafuDigit(digit));
+        result = ToSnafuDigit(digit) + result;
     }
 
-    return new string(digits.ToArray());
+    return result;
 }
 
 string SnafuAdd(string a, string b)
 {
-    var digits = new List<char>();
+    var result = "";
 
     int carry = 0;
 
@@ -87,13 +87,13 @@ string SnafuAdd(string a, string b)
             _ => (sum, 0)
         };
 
-        digits.Insert(0, ToSnafuDigit(sum));
+        result = ToSnafuDigit(sum) + result;
     }
 
     if (carry != 0)
     {
-        digits.Insert(0, ToSnafuDigit(carry));
+        result = ToSnafuDigit(carry) + result;
     }
 
-    return new string(digits.ToArray());
+    return result;
 }
