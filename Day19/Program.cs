@@ -5,117 +5,87 @@ using System.Text.RegularExpressions;
 var input = File.ReadAllLines("input.txt");
 var blueprints = input.Select(Blueprint.Parse).ToList();
 
-var expected = File.ReadAllLines("expected.txt")
-    .Select(line => line.Split(","))
-    .Select(parts => parts.Select(int.Parse).ToArray())
-    .Select(parts => (robots: parts[..4], ResourceScope:parts[4..]))
-    .ToList();
-
 var totalQualityLevel = 0;
 
 foreach (var blueprint in blueprints)
 {
-    Console.WriteLine($"Blueprint {blueprint.Id}");
-
-    var resources = new int[Blueprint.ELEMENT_COUNT];
-    var robots = new int[Blueprint.ELEMENT_COUNT];
-    robots[Blueprint.ELEMENT_ORE] = 1;
-
-    var states = new List<(int[] robots, int[] resources)> { (robots, resources) };
-
-    for (int minute = 1; minute <= 24; minute++)
-    {
-        Console.WriteLine($"Minute {minute}");
-
-        // remove inferior states
-        Console.Write($"before {states.Count}, ");
-
-        // found somewhere that you can do this optimization; no proof
-        var geodeRobots = states.Max(s => s.robots[Blueprint.ELEMENT_GEODE]);
-        states = states.Where(s => s.robots[Blueprint.ELEMENT_GEODE] == geodeRobots).ToList();
-
-        if (geodeRobots == 0)
-        {
-            var obsidianRobots = states.Max(s => s.robots[Blueprint.ELEMENT_OBSIDIAN]);
-            states = states.Where(s => s.robots[Blueprint.ELEMENT_OBSIDIAN] == obsidianRobots).ToList();
-        }
-
-        // the states are sorted so better states are always at lower indices
-        var index = 0;
-
-        while (index < states.Count)
-        {
-            states = states.Where(s => states[index] == s || !Logic.IsBetter(states[index], s)).ToList();
-            index++;
-        }
-
-        Console.WriteLine($"after {states.Count}");
-
-        states = states
-            .SelectMany(s => Logic.Next(blueprint, s))
-            .Distinct(new StateEqualityComparer())
-            .OrderDescending(new StateComparer(blueprint))
-            .ToList();
-    }
-
-
-    var geodes = states.Max(s => s.resources[Blueprint.ELEMENT_GEODE]);
+    var geodes = Logic.FindMaxGeodes(blueprint, 24);
     totalQualityLevel += geodes * blueprint.Id;
-
-    Console.WriteLine($"{geodes} geodes");
-
-    var best = states.Where(s => s.resources[Blueprint.ELEMENT_GEODE] == geodes).ToList();
-    Console.WriteLine(best.Any(s => Logic.IsSame(s, expected[^1])));
 }
 
 var answer1 = totalQualityLevel;
 Console.WriteLine($"Answer 1: {answer1}");
 
+// part 2 takes 10 minutes
+var product = 1;
+
+foreach (var blueprint in blueprints.Take(3))
+{
+    var geodes = Logic.FindMaxGeodes(blueprint, 32);
+    product *= geodes;
+}
+
+var answer2 = product;
+Console.WriteLine($"Answer 2: {answer2}");
+
 class Logic
 {
-    public static bool IsSame((int[] robots, int[] resources) stateA, (int[] robots, int[] resources) stateB)
+    public static int FindMaxGeodes(Blueprint blueprint, int minutes)
     {
-        for (int type = 0; type < stateA.robots.Length; type++)
+        //Console.WriteLine($"Blueprint {blueprint.Id}");
+
+        var resources = new int[Blueprint.ELEMENT_COUNT];
+        var robots = new int[Blueprint.ELEMENT_COUNT];
+        robots[Blueprint.ELEMENT_ORE] = 1;
+
+        var states = new List<(int[] robots, int[] resources)> { (robots, resources) };
+
+        for (int minute = 1; minute <= minutes; minute++)
         {
-            if (stateA.robots[type] != stateB.robots[type])
+            //Console.WriteLine($"Minute {minute}");
+
+            // remove inferior states
+
+            // the states are sorted so better states are always at lower indices
+            var index = 0;
+
+            while (index < states.Count)
             {
-                return false;
+                states = states.Where(s => states[index] == s || !Logic.IsBetter(blueprint, states[index], s)).ToList();
+                index++;
             }
 
-            if (stateA.resources[type] != stateB.resources[type])
-            {
-                return false;
-            }
+            states = states
+                .SelectMany(s => Logic.Next(blueprint, s))
+                .Distinct(new StateEqualityComparer())
+                .OrderDescending(new StateComparer())
+                .ToList();
         }
 
-        return true;
+        var geodes = states.Max(s => s.resources[Blueprint.ELEMENT_GEODE]);
+
+        //Console.WriteLine($"{geodes} geodes");
+
+        return geodes;
     }
 
-    public static bool IsBetterV2(Blueprint blueprint, (int[] robots, int[] resources) stateA, (int[] robots, int[] resources) stateB)
+    public static bool IsBetter(Blueprint blueprint, (int[] robots, int[] resources) stateA, (int[] robots, int[] resources) stateB)
     {
-        var valueA = Add(stateA.resources, CalculateCost(blueprint, stateA.robots));
-        var valueB = Add(stateB.resources, CalculateCost(blueprint, stateB.robots));
-
-        var equal = true;
-
-        for (int type = 0; type < valueA.Length; type++)
+        if (blueprint.Robots[Blueprint.ELEMENT_GEODE].All(x => stateA.robots[x.type] >= x.count))
         {
-            if (valueA[type] < valueB[type])
+            if (stateA.robots[Blueprint.ELEMENT_GEODE] < stateB.robots[Blueprint.ELEMENT_GEODE])
             {
                 return false;
             }
 
-            if (valueA[type] > valueB[type])
+            if (stateA.resources[Blueprint.ELEMENT_GEODE] < stateB.resources[Blueprint.ELEMENT_GEODE])
             {
-                equal = false;
+                return false;
             }
+
+            return true;
         }
 
-        return !equal;
-    }
-
-    public static bool IsBetter((int[] robots, int[] resources) stateA, (int[] robots, int[] resources) stateB)
-    {
         for (int type = 0; type < stateA.robots.Length; type++)
         {
             if (stateA.robots[type] < stateB.robots[type])
@@ -164,47 +134,42 @@ class Logic
 
     public static List<(int[] robots, int[] resources)> Next(Blueprint blueprint, (int[] robots, int[] resources) state)
     {
-        var buys = PossibleBuys(blueprint, state.resources);
+        var buys = PossibleBuys(blueprint, state);
 
         return buys.Select(b => (Add(state.robots, b.robots), Add(b.leftover, state.robots))).ToList();
     }
 
-    public static List<(int[] robots, int[] leftover)> PossibleBuys(Blueprint blueprint, int[] resources)
+    public static List<(int[] robots, int[] leftover)> PossibleBuys(Blueprint blueprint, (int[] robots, int[] resources) state)
     {
+        var result = new List<(int[] robots, int[] leftover)>();
+
         var minNeeded = MinNeededToBuyAnyRobot(blueprint);
 
-        var buy = new int[Blueprint.ELEMENT_COUNT];
-
-        var result = new List<(int[] robots, int[] leftover)>
-    {
-        (buy, resources)
-    };
-
-        while (true)
+        if (!HasTooManyResources(state.resources, minNeeded))
         {
-            buy = (int[])buy.Clone();
-            var toIncrement = 0;
+            result.Add((new int[Blueprint.ELEMENT_COUNT], state.resources));
+        };
 
-            while (true)
+        for (int type = 0; type < Blueprint.ELEMENT_COUNT; type++)
+        {
+            if (type != Blueprint.ELEMENT_GEODE && state.robots[type] >= minNeeded[type])
             {
-                buy[toIncrement]++;
-                var leftover = Subtract(resources, CalculateCost(blueprint, buy));
+                // we don't need more robots of this type
+                continue;
+            }
 
-                if (leftover.All(x => x >= 0) && !HasTooManyResources(leftover, minNeeded))
-                {
-                    result.Add((buy, leftover));
-                    break;
-                }
+            var buy = new int[Blueprint.ELEMENT_COUNT];
+            buy[type] = 1;
 
-                buy[toIncrement] = 0;
-                toIncrement++;
+            var leftover = Subtract(state.resources, CalculateCost(blueprint, buy));
 
-                if (toIncrement >= buy.Length)
-                {
-                    return result;
-                }
+            if (leftover.All(x => x >= 0))
+            {
+                result.Add((buy, leftover));
             }
         }
+
+        return result;
     }
 
     public static int[] Add(int[] a, int[] b)
@@ -314,18 +279,10 @@ class StateEqualityComparer : IEqualityComparer<(int[] robots, int[] resources)>
     }
 }
 
-class StateComparer(Blueprint blueprint) : IComparer<(int[] robots, int[] resources)>
+class StateComparer() : IComparer<(int[] robots, int[] resources)>
 {
     public int Compare((int[] robots, int[] resources) x, (int[] robots, int[] resources) y)
     {
-        var valueX = Logic.Add(x.resources, Logic.CalculateCost(blueprint, x.robots)).Sum();
-        var valueY = Logic.Add(y.resources, Logic.CalculateCost(blueprint, y.robots)).Sum();
-
-        if (valueX != valueY)
-        {
-            return valueX - valueY;
-        }
-
         for (int type = 0; type < x.robots.Length; type++)
         {
             if (x.robots[type] != y.robots[type])
